@@ -93,7 +93,7 @@ async function buildFromSource(blob, mods) {
     const zipfile = await JSZip.loadAsync(new Blob([pkfile]))
 
     // THE TYPE!
-    /** @type {Array<{name: string, src: {manifest: {version: string, dump_lua: boolean, priority: number}, patches: {pattern: {target: string, pattern: string, position: 'before'|'at'|'after', payload: string, match_indent: boolean}, regex: {target: string, pattern: string, position: string, line_prepend: string, payload: string}, module: {source: string, before: string, name: string}, copy: {target: string, position: string, sources: string[]}}[]}, vars: [Object<String, String>] }>} */
+    /** @type {Array<{name: string, src: {manifest: {version: string, dump_lua: boolean, priority: number}, patches: {pattern: {target: string, pattern: string, position: 'before'|'at'|'after', payloa[...]
     const patch_list = [];
 
     // Replace source with patched data from external tool.
@@ -324,6 +324,16 @@ async function buildFromSource(blob, mods) {
     console.log(mods_without_dump)
 
     move_dir(mods_without_dump, "Mods/")
+
+    // --- NEW: Run all Lua mod scripts for emulation (via lua.vm.js) ---
+    if (typeof runAllModLuaScripts === "function") {
+        try {
+            await runAllModLuaScripts();
+        } catch (e) {
+            console.warn("Error running in-browser Lua mod scripts:", e);
+        }
+    }
+    // --- END NEW ---
 
     progress_bar.value = "50"
     status_text.innerText = "Applying Patches"
