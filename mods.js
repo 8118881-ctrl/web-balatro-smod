@@ -78,7 +78,6 @@ function renderModsList() {
         const mod_item = document.createElement("label");
         mod_item.innerText = mod_name;
 
-
         if (mods["Dump from Lovely"] && mod_name != "Dump from Lovely") {
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
@@ -110,3 +109,74 @@ async function useLovelyDump() {
 
     renderModsList()
 }
+
+// ---------------------- LUA VM.JS MOD EXECUTION & SMOD EMULATION -----------------------
+
+/**
+ * Checks for LuaJIT/FFI or unsupported APIs in a Lua script.
+ * @param {string} scriptText
+ * @returns {boolean}
+ */
+function isLuaJITOnly(scriptText) {
+    return /require\s*\(\s*["']ffi["']\s*\)/.test(scriptText) || /\bjit\b/.test(scriptText);
+}
+
+/**
+ * Run a Lua mod script in the browser using lua.vm.js, stubbing Lovely APIs.
+ * @param {string} modName
+ * @param {string} scriptText
+ */
+function runLuaModScript(modName, scriptText) {
+    if (!window.Lua) {
+        alert("Lua VM is not loaded. Please ensure lua.vm.js is included in your HTML.");
+        return;
+    }
+
+    // Warn/block LuaJIT/FFI usage
+    if (isLuaJITOnly(scriptText)) {
+        alert(`Mod "${modName}" uses LuaJIT/FFI or jit APIs and cannot be run in the browser.`);
+        return;
+    }
+
+    var L = Lua.State();
+
+    // Provide a global "lovely" table with basic logging and stub APIs
+    Lua.execute(L, `
+        lovely = {
+            log = function(msg) js.global:console():log("[lovely][" .. tostring(msg) .. "]") end,
+            warn = function(msg) js.global:console():warn("[lovely][" .. tostring(msg) .. "]") end,
+            config = {}
+        }
+    `);
+
+    // Run the mod script (catch errors)
+    try {
+        Lua.execute(L, scriptText);
+    } catch (e) {
+        console.error(`Error running mod ${modName}:`, e);
+        alert(`Error running mod "${modName}": ${e}`);
+    }
+}
+
+/**
+ * Recursively run all Lua scripts in loaded mods.
+ */
+async function runAllModLuaScripts() {
+    for (const modName of Object.keys(mods)) {
+        const modObj = mods[modName];
+        // Recursively find .lua files
+        async function processDir(obj, path = "") {
+            for (const [key, value] of Object.entries(obj)) {
+                if (value instanceof File && key.endsWith(".lua")) {
+                    const text = await value.text();
+                    runLuaModScript(modName, text);
+                } else if (typeof value === "object") {
+                    await processDir(value, path + "/" + key);
+                }
+            }
+        }
+        await processDir(modObj);
+    }
+}
+
+// Example: You could call runAllModLuaScripts() after mods are loaded/imported, or hook it into your build/run workflow.
