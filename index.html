@@ -17,6 +17,8 @@
     <script src="cache.js"></script>
     <script src="build.js"></script>
     <script src="app.js"></script>
+    <!-- Add lua.vm.js for in-browser Lua support -->
+    <script src="https://unpkg.com/lua.vm.js@0.4.1/lua.vm.js"></script>
   </head>
   <body>
     <div class="container">
@@ -36,6 +38,10 @@
           <button id="useLovelyDump">Use Lovely Dump</button>
           <h4>Mods Found:</h4>
           <div class="leftAlign" id="mod-list"></div>
+          <!-- Notice for Lua mod compatibility -->
+          <div style="font-size: 80%; color: #a00; margin-top: 0.5em;">
+            Note: Only pure Lua (5.1) mods are supported. Mods using LuaJIT/FFI/native code will not work. Some SteamOdded/Lovely APIs are stubbed/emulated.
+          </div>
         </div>
         <div class="makeName">
           <label for="makeName">Name: </label><input id="makeName" placeholder="vanilla">
